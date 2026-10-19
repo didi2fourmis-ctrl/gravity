@@ -43,6 +43,7 @@ namespace GravityFlip
         {
             JumpScope.Depth++;
             JumpScope.PlayerBody = __instance.GetComponent<Rigidbody>();
+            CeilingContact.JumpGraceUntil = Time.time + 0.25f;
         }
 
         private static void Finalizer()

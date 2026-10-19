@@ -12,7 +12,7 @@ namespace GravityFlip
     {
         public const string PluginGuid = "fr.samandine.gravityflip";
         public const string PluginName = "Gravity Flip";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.1.0";
 
         internal static ManualLogSource Log;
 
@@ -25,6 +25,9 @@ namespace GravityFlip
         internal static ConfigEntry<bool> InvertMouseY;
         internal static ConfigEntry<bool> ResetOnSceneLoad;
         internal static ConfigEntry<bool> ShowHud;
+        internal static ConfigEntry<bool> CeilingWalk;
+        internal static ConfigEntry<float> CeilingTolerance;
+        internal static ConfigEntry<bool> DebugLogs;
 
         private void Awake()
         {
@@ -50,7 +53,15 @@ namespace GravityFlip
             ResetOnSceneLoad = Config.Bind("Général", "ReinitialiserAuChargement", true,
                 "Remet la gravité à la normale à chaque chargement de niveau.");
 
-            ApplyPatches();
+            CeilingWalk = Config.Bind("Joueur", "MarcherAuPlafond", true,
+                "Quand la gravité est inversée et que le joueur touche le plafond, le jeu le considère au sol (marche, glissade, saut).");
+            CeilingTolerance = Config.Bind("Joueur", "TolerancePlafond", 0.3f,
+                "Distance (mètres) entre le haut du joueur et le plafond en dessous de laquelle il est considéré au sol.");
+            DebugLogs = Config.Bind("Général", "AfficherLogs", false,
+                "Affiche chaque seconde dans la console si le joueur touche le plafond et si le jeu le croit au sol.");
+
+            var harmony = ApplyPatches();
+            GroundForcer.Init(harmony);
 
             // Objet dédié qui survit aux changements de scène.
             var host = new GameObject("GravityFlip");
@@ -58,13 +69,14 @@ namespace GravityFlip
             host.hideFlags = HideFlags.HideAndDontSave;
             host.AddComponent<GravityController>();
             host.AddComponent<CameraFlipper>();
+            host.AddComponent<CeilingContact>();
 
             Log.LogInfo($"{PluginName} {PluginVersion} chargé. [{ToggleKey.Value}] inverser la gravité, [{ChaosKey.Value}] mode chaos.");
         }
 
         // Chaque classe de patch est appliquée séparément : si l'une échoue
         // (mise à jour du jeu, méthode renommée…), les autres fonctionnent quand même.
-        private static void ApplyPatches()
+        private static Harmony ApplyPatches()
         {
             var harmony = new Harmony(PluginGuid);
             foreach (var type in AccessTools.GetTypesFromAssembly(typeof(Plugin).Assembly))
@@ -80,6 +92,7 @@ namespace GravityFlip
                     Log.LogWarning($"Patch {type.Name} non appliqué : {e.Message}");
                 }
             }
+            return harmony;
         }
     }
 }

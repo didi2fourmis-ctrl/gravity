@@ -12,7 +12,8 @@ et les ennemis éjectés, les cadavres, les pièces de la Marksman, les grenades
 | **H** | Mode **chaos** : la gravité s'inverse toute seule toutes les 4 à 12 s |
 
 - `Physics.gravity` est inversée : tout objet physique est concerné.
-- **Joueur** : le détecteur de sol est déplacé au sommet du corps, ce qui permet de tenir au plafond.
+- **Joueur** : quand tu touches le plafond, le jeu te considère au sol : tu peux y marcher, glisser et
+  sauter. Le mod détecte le plafond lui-même et force l'état « au sol » du jeu.
   Sauts et walljumps sont inversés : on saute vers le sol d'origine.
 - **Caméra** : l'image se retourne à la verticale avec une petite animation. C'est un vrai miroir et non
   une rotation, donc gauche et droite ne changent pas. L'axe Y de la souris est inversé automatiquement
@@ -51,6 +52,7 @@ Si `ULTRAKILL/BepInEx/plugins` existe au chemin Steam par défaut, la DLL y est 
 - `src/Plugin.cs` : point d'entrée BepInEx, configuration, application des patches
 - `src/GravityController.cs` : état de la gravité, mode chaos, détecteur de sol du joueur, indicateur
 - `src/CameraFlipper.cs` : retournement de l'image (matrice de projection + culling), souris Y
+- `src/CeilingWalk.cs` : détection du plafond et forçage de l'état « au sol »
 - `src/Patches.cs` : patches Harmony qui inversent les impulsions verticales des sauts
 - `src/KeyInput.cs` : lecture du clavier (Input System du jeu, par réflexion)
 - `src/GameObjects.cs` : recherche du joueur et de la caméra
@@ -68,3 +70,10 @@ Si `ULTRAKILL/BepInEx/plugins` existe au chemin Steam par défaut, la DLL y est 
   qu'on éjecte ou qui deviennent physiques (ragdolls, ennemis projetés) partent vers le haut.
 - Si l'arme flotte « à l'endroit » sur une image retournée, c'est voulu : elle est rendue par une
   caméra séparée.
+
+## Si tu glisses encore au plafond
+
+Mets `AfficherLogs = true` dans la config, relance, inverse la gravité et colle-toi au plafond.
+La console affiche chaque seconde `plafond touché : True/False` et `gc.onGround : True/False`.
+Au démarrage, elle affiche aussi une ligne `Marche au plafond : détecteur ..., champs forcés [...]`.
+Envoie ces lignes : elles montrent ce qui bloque.

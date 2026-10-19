@@ -135,6 +135,8 @@ namespace GravityFlip
             if (groundCheck == null)
                 return;
 
+            LogDebug(player);
+
             // Le jeu a déplacé le détecteur lui-même (glissade, accroupi…) : on adopte sa nouvelle position.
             if (groundCheckMirrored && groundCheck.localPosition != groundCheckApplied)
             {
@@ -153,6 +155,21 @@ namespace GravityFlip
                 groundCheck.localPosition = groundCheckOriginal;
                 groundCheckMirrored = false;
             }
+        }
+
+        private float nextDebugLog;
+
+        private void LogDebug(NewMovement player)
+        {
+            if (!Plugin.DebugLogs.Value || !Inverted || Time.unscaledTime < nextDebugLog)
+                return;
+            nextDebugLog = Time.unscaledTime + 1f;
+
+            object gc = GroundCheckField?.GetValue(player);
+            var onGround = gc?.GetType().GetField("onGround");
+            string state = onGround != null ? onGround.GetValue(gc).ToString() : "?";
+            Plugin.Log.LogInfo($"[debug] plafond touché : {CeilingContact.Touching}, gc.onGround : {state}, " +
+                $"vitesse : {player.GetComponent<Rigidbody>()?.velocity}");
         }
 
         private static Transform FindGroundCheck(NewMovement player)
