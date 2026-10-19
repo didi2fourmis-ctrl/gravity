@@ -12,15 +12,17 @@ et les ennemis éjectés, les cadavres, les pièces de la Marksman, les grenades
 | **H** | Mode **chaos** : la gravité s'inverse toute seule toutes les 4 à 12 s |
 
 - `Physics.gravity` est inversée : tout objet physique est concerné.
-- **Joueur** : quand tu touches le plafond, le jeu te considère au sol : tu peux y marcher, glisser et
-  sauter. Le mod détecte le plafond lui-même et force l'état « au sol » du jeu.
-  Sauts et walljumps sont inversés : on saute vers le sol d'origine.
-- **Caméra** : l'image se retourne à la verticale avec une petite animation. C'est un vrai miroir et non
-  une rotation, donc gauche et droite ne changent pas. L'axe Y de la souris est inversé automatiquement
-  pour que la visée reste naturelle.
-- Un indicateur s'affiche en haut de l'écran (gravité inversée, compte à rebours du chaos).
-- Tout se règle dans `BepInEx/config/fr.samandine.gravityflip.cfg` : touches, durée de
-  l'animation, délais du chaos, caméra, souris, remise à zéro à chaque niveau.
+- **Le joueur se retourne vraiment** : il pivote de 180°, ses pieds se posent au plafond et la caméra
+  reste à hauteur d'yeux. La vue est donc naturellement à l'envers. On y marche, glisse, saute et
+  slamme comme sur un sol normal. La souris reste naturelle, le mod compense la rotation gauche/droite.
+- **Les armes suivent la gravité** : dans le code du joueur, des armes et des projectiles, chaque
+  « haut » et « bas » du jeu devient le haut et le bas de la gravité actuelle. Les pièces sont lancées
+  vers le haut du joueur, et les grenades, boulets et clous tombent vers le plafond.
+- **Indicateur** : il s'affiche juste au-dessus du HUD des armes, en bas à gauche, avec le compte à
+  rebours du chaos. Sa position se règle (`PositionX`, `PositionY`).
+- Tout se règle dans `BepInEx/config/fr.samandine.gravityflip.cfg` : touches, durée du
+  retournement, délais du chaos, position de l'indicateur, remise à zéro à chaque niveau, classes du jeu
+  concernées par la gravité.
 
 ## Installation (sans compiler)
 
@@ -50,8 +52,9 @@ Si `ULTRAKILL/BepInEx/plugins` existe au chemin Steam par défaut, la DLL y est 
 ## Structure
 
 - `src/Plugin.cs` : point d'entrée BepInEx, configuration, application des patches
-- `src/GravityController.cs` : état de la gravité, mode chaos, détecteur de sol du joueur, indicateur
-- `src/CameraFlipper.cs` : retournement de l'image (matrice de projection + culling), souris Y
+- `src/GravityController.cs` : état de la gravité, mode chaos, indicateur
+- `src/PlayerRoller.cs` : retournement du joueur (pieds au plafond) et compensation de la souris
+- `src/GravityAware.cs` : réécrit les `Vector3.up/down` du joueur et des armes selon la gravité
 - `src/CeilingWalk.cs` : détection du plafond et forçage de l'état « au sol »
 - `src/Patches.cs` : patches Harmony qui inversent les impulsions verticales des sauts
 - `src/KeyInput.cs` : lecture du clavier (Input System du jeu, par réflexion)
@@ -62,18 +65,17 @@ Si `ULTRAKILL/BepInEx/plugins` existe au chemin Steam par défaut, la DLL y est 
 ## Limites connues
 
 - **Pas encore testé en jeu**. Il repose sur des noms internes
-  d'ULTRAKILL (`NewMovement.gc`, `NewMovement.Jump`/`WallJump`, `CameraController.reverseY`). Si une mise à jour les renomme, le mod l'indique dans la console BepInEx et
+  d'ULTRAKILL (`NewMovement.gc`, `NewMovement.Jump`/`WallJump`, `CameraController.rotationY`, noms des armes). Si une mise à jour les renomme, le mod l'indique dans la console BepInEx et
   désactive seulement la fonction touchée. Pour retrouver les bons noms, ouvrir `Assembly-CSharp.dll`
   avec dnSpy ou ILSpy.
-- Le **slam** (accroupi en l'air) et le **dash** vertical gardent leur direction d'origine.
+- Une arme dont le code ne dit pas « haut » avec `Vector3.up` (par exemple `new Vector3(0, 1, 0)`) garde
+  son comportement d'origine. Si une arme n'est pas affectée, ajoute le nom de sa classe dans `ClassesArmes`.
 - Les ennemis qui marchent sur un NavMesh (la plupart des ennemis au sol) restent au sol. Seuls ceux
   qu'on éjecte ou qui deviennent physiques (ragdolls, ennemis projetés) partent vers le haut.
-- Si l'arme flotte « à l'endroit » sur une image retournée, c'est voulu : elle est rendue par une
-  caméra séparée.
 
-## Si tu glisses encore au plafond
+## Si quelque chose ne marche pas
 
 Mets `AfficherLogs = true` dans la config, relance, inverse la gravité et colle-toi au plafond.
 La console affiche chaque seconde `plafond touché : True/False` et `gc.onGround : True/False`.
-Au démarrage, elle affiche aussi une ligne `Marche au plafond : détecteur ..., champs forcés [...]`.
+Au démarrage, elle affiche aussi les lignes `Marche au plafond : ...` et `Gravité relative : ...`.
 Envoie ces lignes : elles montrent ce qui bloque.

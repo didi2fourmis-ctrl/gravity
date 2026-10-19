@@ -6,29 +6,23 @@ using UnityEngine.SceneManagement;
 namespace GravityFlip
 {
     /// <summary>
-    /// Gère l'état de la gravité : bascule, mode chaos, et adaptation du joueur
-    /// (le détecteur de sol est déplacé au sommet du joueur pour qu'il puisse
-    /// marcher, glisser et sauter depuis le plafond).
+    /// Gère l'état de la gravité : bascule, mode chaos et indicateur à l'écran.
+    /// Le retournement du joueur est fait par <see cref="PlayerRoller"/>.
     /// </summary>
     public class GravityController : MonoBehaviour
     {
         public static bool Inverted { get; private set; }
         public static bool ChaosMode { get; private set; }
 
-        /// <summary>0 = vue normale, 1 = vue retournée (lissé dans le temps).</summary>
+        /// <summary>0 = joueur à l'endroit, 1 = joueur retourné (lissé dans le temps).</summary>
         public static float FlipProgress { get; private set; }
 
         private static readonly FieldInfo GroundCheckField = AccessTools.Field(typeof(NewMovement), "gc");
 
         private float nextChaosFlip;
-
-        private NewMovement trackedPlayer;
-        private Transform groundCheck;
-        private Vector3 groundCheckOriginal;
-        private Vector3 groundCheckApplied;
-        private bool groundCheckMirrored;
-
+        private float nextDebugLog;
         private GUIStyle hudStyle;
+        private GUIStyle shadowStyle;
 
         private void Awake()
         {
@@ -42,10 +36,6 @@ namespace GravityFlip
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            trackedPlayer = null;
-            groundCheck = null;
-            groundCheckMirrored = false;
-
             if (Plugin.ResetOnSceneLoad.Value)
                 SetInverted(false, instant: true);
         }
@@ -73,7 +63,7 @@ namespace GravityFlip
             FlipProgress = Mathf.MoveTowards(FlipProgress, Inverted ? 1f : 0f, Time.unscaledDeltaTime / duration);
 
             EnforceGravityDirection();
-            SyncPlayer();
+            LogDebug();
         }
 
         public static void SetInverted(bool value, bool instant = false)
@@ -86,6 +76,7 @@ namespace GravityFlip
 
             Inverted = value;
             EnforceGravityDirection();
+            PlayerRoller.OnInvertChanged(value);
 
             // Les corps endormis ignorent la gravité : on les réveille pour qu'ils "tombent" vers le haut.
             foreach (var rb in FindObjectsOfType<Rigidbody>())
@@ -115,91 +106,21 @@ namespace GravityFlip
             nextChaosFlip = Time.time + Random.Range(min, max);
         }
 
-        private void SyncPlayer()
-        {
-            var player = GameObjects.Player;
-            if (player == null)
-                return;
-
-            if (player != trackedPlayer)
-            {
-                trackedPlayer = player;
-                groundCheck = FindGroundCheck(player);
-                groundCheckMirrored = false;
-                if (groundCheck != null)
-                    groundCheckOriginal = groundCheck.localPosition;
-                else
-                    Plugin.Log.LogWarning("Détecteur de sol du joueur introuvable : impossible de marcher au plafond.");
-            }
-
-            if (groundCheck == null)
-                return;
-
-            LogDebug(player);
-
-            // Le jeu a déplacé le détecteur lui-même (glissade, accroupi…) : on adopte sa nouvelle position.
-            if (groundCheckMirrored && groundCheck.localPosition != groundCheckApplied)
-            {
-                groundCheckOriginal = groundCheck.localPosition;
-                groundCheckMirrored = false;
-            }
-
-            if (Inverted && !groundCheckMirrored)
-            {
-                groundCheckApplied = MirrorAcrossBody(player, groundCheck, groundCheckOriginal);
-                groundCheck.localPosition = groundCheckApplied;
-                groundCheckMirrored = true;
-            }
-            else if (!Inverted && groundCheckMirrored)
-            {
-                groundCheck.localPosition = groundCheckOriginal;
-                groundCheckMirrored = false;
-            }
-        }
-
-        private float nextDebugLog;
-
-        private void LogDebug(NewMovement player)
+        private void LogDebug()
         {
             if (!Plugin.DebugLogs.Value || !Inverted || Time.unscaledTime < nextDebugLog)
                 return;
             nextDebugLog = Time.unscaledTime + 1f;
 
+            var player = GameObjects.Player;
+            if (player == null)
+                return;
+
             object gc = GroundCheckField?.GetValue(player);
             var onGround = gc?.GetType().GetField("onGround");
             string state = onGround != null ? onGround.GetValue(gc).ToString() : "?";
             Plugin.Log.LogInfo($"[debug] plafond touché : {CeilingContact.Touching}, gc.onGround : {state}, " +
-                $"vitesse : {player.GetComponent<Rigidbody>()?.velocity}");
-        }
-
-        private static Transform FindGroundCheck(NewMovement player)
-        {
-            if (GroundCheckField?.GetValue(player) is Component component)
-                return component.transform;
-
-            foreach (var child in player.GetComponentsInChildren<Transform>(true))
-            {
-                if (child.name.Contains("GroundCheck"))
-                    return child;
-            }
-            return null;
-        }
-
-        /// <summary>Symétrie de la position du détecteur par rapport au centre du corps du joueur.</summary>
-        private static Vector3 MirrorAcrossBody(NewMovement player, Transform target, Vector3 localPosition)
-        {
-            var parent = target.parent;
-            var capsule = player.GetComponent<CapsuleCollider>();
-            Vector3 center = capsule != null
-                ? player.transform.TransformPoint(capsule.center)
-                : player.transform.position;
-
-            Vector3 world = parent != null ? parent.TransformPoint(localPosition) : localPosition;
-            Vector3 up = player.transform.up;
-            float height = Vector3.Dot(world - center, up);
-            Vector3 mirrored = world - 2f * height * up;
-
-            return parent != null ? parent.InverseTransformPoint(mirrored) : mirrored;
+                $"haut du joueur : {player.transform.up}, vitesse : {player.GetComponent<Rigidbody>()?.velocity}");
         }
 
         private void OnGUI()
@@ -211,18 +132,32 @@ namespace GravityFlip
             {
                 hudStyle = new GUIStyle(GUI.skin.label)
                 {
-                    alignment = TextAnchor.UpperCenter,
-                    fontSize = 22,
+                    alignment = TextAnchor.LowerLeft,
                     fontStyle = FontStyle.Bold,
+                    wordWrap = false,
                 };
                 hudStyle.normal.textColor = new Color(1f, 0.25f, 0.2f);
+                shadowStyle = new GUIStyle(hudStyle);
+                shadowStyle.normal.textColor = new Color(0f, 0f, 0f, 0.85f);
             }
 
-            string text = Inverted ? "▲ GRAVITÉ INVERSÉE ▲" : "GRAVITÉ NORMALE";
+            // Taille proportionnelle à la résolution, comme le HUD du jeu.
+            int size = Mathf.RoundToInt(Screen.height * 0.03f);
+            hudStyle.fontSize = size;
+            shadowStyle.fontSize = size;
+
+            string text = Inverted ? "▼ GRAVITÉ INVERSÉE ▼" : "GRAVITÉ NORMALE";
             if (ChaosMode)
                 text += $"   CHAOS {Mathf.Max(0f, nextChaosFlip - Time.time):0.0}s";
 
-            GUI.Label(new Rect(0f, 12f, Screen.width, 40f), text, hudStyle);
+            // Bas du texte posé juste au-dessus du HUD des armes (en bas à gauche par défaut).
+            float x = Screen.width * Plugin.HudX.Value;
+            float bottom = Screen.height * Plugin.HudY.Value;
+            var rect = new Rect(x, bottom - size * 2f, Screen.width - x, size * 2f);
+
+            GUI.depth = -1000;
+            GUI.Label(new Rect(rect.x + 2f, rect.y + 2f, rect.width, rect.height), text, shadowStyle);
+            GUI.Label(rect, text, hudStyle);
         }
     }
 }

@@ -12,6 +12,7 @@ namespace GravityFlip
     /// </summary>
     internal static class JumpScope
     {
+        // Utilisé seulement pour les sauts dont le code n'a pas pu être réécrit (voir UpVectorRewriter).
         internal static int Depth;
         internal static Rigidbody PlayerBody;
 
@@ -39,16 +40,19 @@ namespace GravityFlip
 
         private static IEnumerable<MethodBase> TargetMethods() => Candidates();
 
-        private static void Prefix(NewMovement __instance)
+        private static void Prefix(NewMovement __instance, MethodBase __originalMethod, out bool __state)
         {
+            CeilingContact.JumpGraceUntil = Time.time + 0.25f;
+            __state = !UpVectorRewriter.Rewritten.Contains(__originalMethod);
+            if (!__state)
+                return;
             JumpScope.Depth++;
             JumpScope.PlayerBody = __instance.GetComponent<Rigidbody>();
-            CeilingContact.JumpGraceUntil = Time.time + 0.25f;
         }
 
-        private static void Finalizer()
+        private static void Finalizer(bool __state)
         {
-            if (JumpScope.Depth > 0)
+            if (__state && JumpScope.Depth > 0)
                 JumpScope.Depth--;
         }
     }

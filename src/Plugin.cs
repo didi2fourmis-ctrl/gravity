@@ -12,7 +12,7 @@ namespace GravityFlip
     {
         public const string PluginGuid = "fr.samandine.gravityflip";
         public const string PluginName = "Gravity Flip";
-        public const string PluginVersion = "1.1.0";
+        public const string PluginVersion = "1.2.0";
 
         internal static ManualLogSource Log;
 
@@ -21,8 +21,11 @@ namespace GravityFlip
         internal static ConfigEntry<float> FlipDuration;
         internal static ConfigEntry<float> ChaosMinDelay;
         internal static ConfigEntry<float> ChaosMaxDelay;
-        internal static ConfigEntry<bool> FlipCamera;
-        internal static ConfigEntry<bool> InvertMouseY;
+        internal static ConfigEntry<bool> FlipPlayer;
+        internal static ConfigEntry<float> HudX;
+        internal static ConfigEntry<float> HudY;
+        internal static ConfigEntry<string> PlayerTypes;
+        internal static ConfigEntry<string> WeaponTypes;
         internal static ConfigEntry<bool> ResetOnSceneLoad;
         internal static ConfigEntry<bool> ShowHud;
         internal static ConfigEntry<bool> CeilingWalk;
@@ -38,14 +41,23 @@ namespace GravityFlip
             ChaosKey = Config.Bind("Contrôles", "ToucheChaos", "H",
                 "Active / désactive le mode chaos (la gravité s'inverse toute seule à intervalles aléatoires).");
 
-            FlipDuration = Config.Bind("Visuel", "DureeRetournement", 0.35f,
-                "Durée (secondes) de l'animation de retournement de la caméra.");
-            FlipCamera = Config.Bind("Visuel", "RetournerCamera", true,
-                "Retourne l'image à l'écran quand la gravité est inversée (le plafond devient le sol).");
-            InvertMouseY = Config.Bind("Visuel", "InverserSourisY", true,
-                "Inverse l'axe Y de la souris quand l'image est retournée, pour que viser reste naturel.");
-            ShowHud = Config.Bind("Visuel", "AfficherIndicateur", true,
-                "Affiche un indicateur en haut de l'écran quand la gravité est inversée ou que le chaos est actif.");
+            FlipDuration = Config.Bind("Joueur", "DureeRetournement", 0.35f,
+                "Durée (secondes) du retournement du joueur quand la gravité change.");
+            FlipPlayer = Config.Bind("Joueur", "RetournerJoueur", true,
+                "Retourne le joueur tête en bas quand la gravité est inversée : ses pieds touchent le plafond.");
+
+            ShowHud = Config.Bind("Indicateur", "AfficherIndicateur", true,
+                "Affiche un texte quand la gravité est inversée ou que le chaos est actif.");
+            HudX = Config.Bind("Indicateur", "PositionX", 0.02f,
+                "Position horizontale du texte (0 = bord gauche, 1 = bord droit).");
+            HudY = Config.Bind("Indicateur", "PositionY", 0.74f,
+                "Position verticale du BAS du texte (0 = haut de l'écran, 1 = bas). 0.74 = juste au-dessus du HUD des armes.");
+
+            PlayerTypes = Config.Bind("Avancé", "ClassesJoueur", "NewMovement,GroundCheck,GroundCheckGroup,WallCheck",
+                "Classes du jeu où « haut » et « bas » suivent la gravité (saut, slam, détection du sol).");
+            WeaponTypes = Config.Bind("Avancé", "ClassesArmes",
+                "Revolver,Coin,Shotgun,ShotgunHammer,Grenade,Nailgun,Nail,RocketLauncher,Cannonball,Railcannon,Harpoon,Chainsaw,Magnet,Punch,GunControl,WeaponCharges",
+                "Classes des armes et projectiles où « haut » et « bas » suivent la gravité (pièces, grenades, clous…).");
 
             ChaosMinDelay = Config.Bind("Chaos", "DelaiMin", 4f, "Délai minimum (secondes) entre deux inversions en mode chaos.");
             ChaosMaxDelay = Config.Bind("Chaos", "DelaiMax", 12f, "Délai maximum (secondes) entre deux inversions en mode chaos.");
@@ -61,6 +73,7 @@ namespace GravityFlip
                 "Affiche chaque seconde dans la console si le joueur touche le plafond et si le jeu le croit au sol.");
 
             var harmony = ApplyPatches();
+            UpVectorRewriter.Init(harmony);
             GroundForcer.Init(harmony);
 
             // Objet dédié qui survit aux changements de scène.
@@ -68,7 +81,7 @@ namespace GravityFlip
             DontDestroyOnLoad(host);
             host.hideFlags = HideFlags.HideAndDontSave;
             host.AddComponent<GravityController>();
-            host.AddComponent<CameraFlipper>();
+            host.AddComponent<PlayerRoller>();
             host.AddComponent<CeilingContact>();
 
             Log.LogInfo($"{PluginName} {PluginVersion} chargé. [{ToggleKey.Value}] inverser la gravité, [{ChaosKey.Value}] mode chaos.");
