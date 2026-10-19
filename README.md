@@ -30,8 +30,9 @@ et les ennemis éjectés, les cadavres, les pièces de la Marksman, les grenades
 3. La copier dans `ULTRAKILL/BepInEx/plugins/GravityFlip/`.
 4. Lancer le jeu et appuyer sur **G**.
 
-La DLL est compilée automatiquement par GitHub Actions à chaque modification. Pour publier une
-nouvelle version : créer un tag `v1.0.1` (par exemple), la release est générée toute seule.
+La DLL est compilée automatiquement par GitHub Actions à chaque modification de `main`, et la release
+correspondant à `version_number` dans `manifest.json` est mise à jour. Pour publier une nouvelle version,
+il suffit d'augmenter ce numéro (et `<Version>` dans `GravityFlip.csproj`).
 
 ## Compiler soi-même (facultatif)
 
