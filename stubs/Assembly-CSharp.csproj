@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>Assembly-CSharp</AssemblyName>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" IncludeAssets="compile" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
