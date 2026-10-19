@@ -12,7 +12,7 @@ namespace GravityFlip
     {
         public const string PluginGuid = "fr.samandine.gravityflip";
         public const string PluginName = "Gravity Flip";
-        public const string PluginVersion = "1.2.0";
+        public const string PluginVersion = "1.2.1";
 
         internal static ManualLogSource Log;
 
@@ -22,6 +22,7 @@ namespace GravityFlip
         internal static ConfigEntry<float> ChaosMinDelay;
         internal static ConfigEntry<float> ChaosMaxDelay;
         internal static ConfigEntry<bool> FlipPlayer;
+        internal static ConfigEntry<bool> InvertMouseX;
         internal static ConfigEntry<float> HudX;
         internal static ConfigEntry<float> HudY;
         internal static ConfigEntry<string> PlayerTypes;
@@ -45,6 +46,8 @@ namespace GravityFlip
                 "Durée (secondes) du retournement du joueur quand la gravité change.");
             FlipPlayer = Config.Bind("Joueur", "RetournerJoueur", true,
                 "Retourne le joueur tête en bas quand la gravité est inversée : ses pieds touchent le plafond.");
+            InvertMouseX = Config.Bind("Joueur", "InverserSourisX", false,
+                "Inverse la souris gauche/droite quand le joueur est retourné. À activer seulement si tourner semble à l'envers.");
 
             ShowHud = Config.Bind("Indicateur", "AfficherIndicateur", true,
                 "Affiche un texte quand la gravité est inversée ou que le chaos est actif.");

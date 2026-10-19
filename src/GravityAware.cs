@@ -26,9 +26,6 @@ namespace GravityFlip
         private static readonly MethodInfo GravityUp = AccessTools.Method(typeof(GravityDirection), nameof(GravityDirection.Up));
         private static readonly MethodInfo GravityDown = AccessTools.Method(typeof(GravityDirection), nameof(GravityDirection.Down));
 
-        /// <summary>Méthodes réécrites : leurs sauts n'ont plus besoin d'être inversés à la main.</summary>
-        public static readonly HashSet<MethodBase> Rewritten = new HashSet<MethodBase>();
-
         public static void Init(Harmony harmony)
         {
             var names = new List<string>();
@@ -60,7 +57,6 @@ namespace GravityFlip
                     try
                     {
                         harmony.Patch(method, transpiler: new HarmonyMethod(typeof(UpVectorRewriter), nameof(Transpiler)));
-                        Rewritten.Add(method);
                         count++;
                     }
                     catch (Exception e)

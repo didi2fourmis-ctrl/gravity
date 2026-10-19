@@ -13,8 +13,8 @@ namespace GravityFlip
     ///
     /// Le jeu réécrit la rotation du joueur (le lacet de la souris) à chaque image. Après chacune
     /// de ses méthodes, on relit ce lacet et on réapplique notre retournement par-dessus.
-    /// Tête en bas, tourner la souris à droite ferait tourner à gauche : on inverse donc
-    /// le lacet autour de sa valeur au moment du retournement.
+    /// L'option InverserSourisX permet, si besoin, d'inverser le lacet autour de sa valeur
+    /// au moment du retournement.
     /// </summary>
     [DefaultExecutionOrder(10000)]
     public class PlayerRoller : MonoBehaviour
@@ -35,7 +35,7 @@ namespace GravityFlip
 
         public static void OnInvertChanged(bool inverted)
         {
-            if (!Plugin.FlipPlayer.Value)
+            if (!Plugin.FlipPlayer.Value || (inverted && !Plugin.InvertMouseX.Value))
                 return;
 
             var player = GameObjects.Player;

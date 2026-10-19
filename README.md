@@ -14,7 +14,7 @@ et les ennemis éjectés, les cadavres, les pièces de la Marksman, les grenades
 - `Physics.gravity` est inversée : tout objet physique est concerné.
 - **Le joueur se retourne vraiment** : il pivote de 180°, ses pieds se posent au plafond et la caméra
   reste à hauteur d'yeux. La vue est donc naturellement à l'envers. On y marche, glisse, saute et
-  slamme comme sur un sol normal. La souris reste naturelle, le mod compense la rotation gauche/droite.
+  slamme comme sur un sol normal. La souris reste naturelle (option `InverserSourisX` si besoin).
 - **Les armes suivent la gravité** : dans le code du joueur, des armes et des projectiles, chaque
   « haut » et « bas » du jeu devient le haut et le bas de la gravité actuelle. Les pièces sont lancées
   vers le haut du joueur, et les grenades, boulets et clous tombent vers le plafond.

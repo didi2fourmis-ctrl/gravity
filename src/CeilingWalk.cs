@@ -22,8 +22,11 @@ namespace GravityFlip
         private static readonly RaycastHit[] Hits = new RaycastHit[16];
         private static int environmentMask;
 
+        /// <summary>Vrai quand le joueur s'éloigne du plafond (saut) : il ne faut surtout pas le recoller.</summary>
+        public static bool MovingAway;
+
         public static bool ShouldForceGround =>
-            Plugin.CeilingWalk.Value && GravityController.Inverted && Touching && Time.time >= JumpGraceUntil;
+            Plugin.CeilingWalk.Value && GravityController.Inverted && Touching && !MovingAway && Time.time >= JumpGraceUntil;
 
         private void Update() => Refresh();
         private void FixedUpdate() => Refresh();
@@ -31,6 +34,7 @@ namespace GravityFlip
         private static void Refresh()
         {
             Touching = false;
+            MovingAway = false;
             if (!GravityController.Inverted)
                 return;
 
@@ -40,6 +44,8 @@ namespace GravityFlip
 
             var capsule = player.GetComponent<CapsuleCollider>();
             var body = player.GetComponent<Rigidbody>();
+            // Gravité inversée : s'éloigner du plafond = descendre.
+            MovingAway = body != null && body.velocity.y < -1f;
             Transform t = player.transform;
 
             Vector3 center = capsule != null ? t.TransformPoint(capsule.center) : t.position;

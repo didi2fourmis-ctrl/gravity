@@ -7,17 +7,20 @@ using UnityEngine;
 namespace GravityFlip
 {
     /// <summary>
-    /// Pendant un saut du joueur, toute impulsion verticale appliquée à son Rigidbody est
-    /// inversée quand la gravité l'est : on saute "vers le bas" depuis le plafond.
+    /// Pendant un saut du joueur en gravité inversée, toute impulsion qui pousse vers le plafond
+    /// (y positif) est retournée : on saute "vers le bas", en s'éloignant du plafond.
+    /// Une impulsion déjà dans le bon sens (code réécrit par UpVectorRewriter) n'est pas touchée.
     /// </summary>
     internal static class JumpScope
     {
-        // Utilisé seulement pour les sauts dont le code n'a pas pu être réécrit (voir UpVectorRewriter).
         internal static int Depth;
         internal static Rigidbody PlayerBody;
 
-        internal static bool ShouldMirror(Rigidbody body) =>
-            Depth > 0 && GravityController.Inverted && body == PlayerBody;
+        internal static void Mirror(Rigidbody body, ref Vector3 value)
+        {
+            if (Depth > 0 && GravityController.Inverted && body == PlayerBody && value.y > 0f)
+                value.y = -value.y;
+        }
     }
 
     [HarmonyPatch]
@@ -40,19 +43,16 @@ namespace GravityFlip
 
         private static IEnumerable<MethodBase> TargetMethods() => Candidates();
 
-        private static void Prefix(NewMovement __instance, MethodBase __originalMethod, out bool __state)
+        private static void Prefix(NewMovement __instance)
         {
-            CeilingContact.JumpGraceUntil = Time.time + 0.25f;
-            __state = !UpVectorRewriter.Rewritten.Contains(__originalMethod);
-            if (!__state)
-                return;
+            CeilingContact.JumpGraceUntil = Time.time + 0.3f;
             JumpScope.Depth++;
             JumpScope.PlayerBody = __instance.GetComponent<Rigidbody>();
         }
 
-        private static void Finalizer(bool __state)
+        private static void Finalizer()
         {
-            if (__state && JumpScope.Depth > 0)
+            if (JumpScope.Depth > 0)
                 JumpScope.Depth--;
         }
     }
@@ -62,8 +62,7 @@ namespace GravityFlip
     {
         private static void Prefix(Rigidbody __instance, ref Vector3 __0)
         {
-            if (JumpScope.ShouldMirror(__instance))
-                __0.y = -__0.y;
+            JumpScope.Mirror(__instance, ref __0);
         }
     }
 
@@ -72,8 +71,7 @@ namespace GravityFlip
     {
         private static void Prefix(Rigidbody __instance, ref Vector3 __0)
         {
-            if (JumpScope.ShouldMirror(__instance))
-                __0.y = -__0.y;
+            JumpScope.Mirror(__instance, ref __0);
         }
     }
 }
