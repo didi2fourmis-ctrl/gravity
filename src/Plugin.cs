@@ -12,12 +12,13 @@ namespace GravityFlip
     {
         public const string PluginGuid = "fr.samandine.gravityflip";
         public const string PluginName = "Gravity Flip";
-        public const string PluginVersion = "1.2.1";
+        public const string PluginVersion = "1.3.0";
 
         internal static ManualLogSource Log;
 
         internal static ConfigEntry<string> ToggleKey;
         internal static ConfigEntry<string> ChaosKey;
+        internal static ConfigEntry<string> HudKey;
         internal static ConfigEntry<float> FlipDuration;
         internal static ConfigEntry<float> ChaosMinDelay;
         internal static ConfigEntry<float> ChaosMaxDelay;
@@ -41,6 +42,8 @@ namespace GravityFlip
                 "Touche pour inverser / rétablir la gravité (nom de touche Unity : G, F1, Digit1, LeftAlt…).");
             ChaosKey = Config.Bind("Contrôles", "ToucheChaos", "H",
                 "Active / désactive le mode chaos (la gravité s'inverse toute seule à intervalles aléatoires).");
+            HudKey = Config.Bind("Contrôles", "ToucheIndicateur", "J",
+                "Affiche / masque le texte à l'écran sans changer la gravité ni le mode chaos.");
 
             FlipDuration = Config.Bind("Joueur", "DureeRetournement", 0.35f,
                 "Durée (secondes) du retournement du joueur quand la gravité change.");
@@ -87,7 +90,7 @@ namespace GravityFlip
             host.AddComponent<PlayerRoller>();
             host.AddComponent<CeilingContact>();
 
-            Log.LogInfo($"{PluginName} {PluginVersion} chargé. [{ToggleKey.Value}] inverser la gravité, [{ChaosKey.Value}] mode chaos.");
+            Log.LogInfo($"{PluginName} {PluginVersion} chargé. [{ToggleKey.Value}] inverser la gravité, [{ChaosKey.Value}] mode chaos, [{HudKey.Value}] afficher / masquer le texte.");
         }
 
         // Chaque classe de patch est appliquée séparément : si l'une échoue

@@ -10,6 +10,7 @@ et les ennemis éjectés, les cadavres, les pièces de la Marksman, les grenades
 |---|---|
 | **G** | Inverser / rétablir la gravité |
 | **H** | Mode **chaos** : la gravité s'inverse toute seule toutes les 4 à 12 s |
+| **J** | Masquer / afficher le texte à l'écran (la gravité et le chaos restent actifs) |
 
 - `Physics.gravity` est inversée : tout objet physique est concerné.
 - **Le joueur se retourne vraiment** : il pivote de 180°, ses pieds se posent au plafond et la caméra
@@ -19,7 +20,8 @@ et les ennemis éjectés, les cadavres, les pièces de la Marksman, les grenades
   « haut » et « bas » du jeu devient le haut et le bas de la gravité actuelle. Les pièces sont lancées
   vers le haut du joueur, et les grenades, boulets et clous tombent vers le plafond.
 - **Indicateur** : il s'affiche juste au-dessus du HUD des armes, en bas à gauche, avec le compte à
-  rebours du chaos. Sa position se règle (`PositionX`, `PositionY`).
+  rebours du chaos. Sa position se règle (`PositionX`, `PositionY`), et **J** le masque ou le
+  réaffiche sans désactiver le mod (le choix est gardé d'une partie à l'autre).
 - Tout se règle dans `BepInEx/config/fr.samandine.gravityflip.cfg` : touches, durée du
   retournement, délais du chaos, position de l'indicateur, remise à zéro à chaque niveau, classes du jeu
   concernées par la gravité.

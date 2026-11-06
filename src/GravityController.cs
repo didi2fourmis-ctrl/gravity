@@ -53,6 +53,10 @@ namespace GravityFlip
                 Plugin.Log.LogInfo(ChaosMode ? "Mode chaos activé." : "Mode chaos désactivé.");
             }
 
+            // Masque / affiche le texte sans toucher à la gravité ni au chaos (sauvegardé dans la config).
+            if (KeyInput.WasPressed(Plugin.HudKey.Value))
+                Plugin.ShowHud.Value = !Plugin.ShowHud.Value;
+
             if (ChaosMode && Time.time >= nextChaosFlip)
             {
                 SetInverted(!Inverted);
