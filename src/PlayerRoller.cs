@@ -26,7 +26,6 @@ namespace GravityFlip
         private static bool wroteCamera;
         private static Quaternion lastCameraWrite;
 
-        private static Quaternion gameRotation = Quaternion.identity;
         private static float gameYaw;
         private static bool yawMirrored;
         private static float yawPivot;
@@ -73,13 +72,10 @@ namespace GravityFlip
             Transform t = player.transform;
 
             // Le jeu a-t-il réécrit la rotation depuis notre dernier passage ?
-            // On garde toute la rotation du jeu (pas seulement le lacet) : dans les niveaux où le jeu
-            // retourne lui-même le joueur, notre retournement s'ajoute au sien au lieu de l'effacer.
+            // On ne relit que le lacet (gauche / droite) : il ne dépend pas du retournement, même si le
+            // jeu tourne le joueur à partir de sa rotation actuelle (déjà retournée par le mod).
             if (!wrotePlayer || Quaternion.Angle(t.rotation, lastPlayerWrite) > 0.01f)
-            {
-                gameRotation = t.rotation;
-                gameYaw = YawOf(gameRotation);
-            }
+                gameYaw = YawOf(t.rotation);
 
             if (roll < 0.01f && !yawMirrored)
             {
@@ -87,8 +83,9 @@ namespace GravityFlip
                 return;
             }
 
-            float yawOffset = yawMirrored ? 2f * (yawPivot - gameYaw) : 0f;
-            Quaternion desired = Quaternion.AngleAxis(yawOffset, Vector3.up) * gameRotation * Quaternion.Euler(0f, 0f, roll);
+            // Repère du jeu : identique au monde, sauf dans les niveaux où le jeu inverse lui-même la gravité.
+            float shownYaw = yawMirrored ? 2f * yawPivot - gameYaw : gameYaw;
+            Quaternion desired = GameFrame() * Quaternion.Euler(0f, shownYaw, 0f) * Quaternion.Euler(0f, 0f, roll);
 
             if (Quaternion.Angle(t.rotation, desired) > 0.01f)
             {
@@ -100,7 +97,7 @@ namespace GravityFlip
             lastPlayerWrite = t.rotation;
             wrotePlayer = true;
 
-            FixCamera(t, gameRotation * Vector3.up);
+            FixCamera(t, GravityController.GameUp);
         }
 
         /// <summary>
@@ -132,9 +129,20 @@ namespace GravityFlip
             wroteCamera = true;
         }
 
+        /// <summary>Rotation qui amène le haut du monde sur le « haut » du jeu (identité en temps normal).</summary>
+        private static Quaternion GameFrame()
+        {
+            Vector3 up = GravityController.GameUp;
+            if (Vector3.Dot(up, Vector3.up) > 0.9999f)
+                return Quaternion.identity;
+            if (Vector3.Dot(up, Vector3.up) < -0.9999f)
+                return Quaternion.Euler(0f, 0f, 180f);
+            return Quaternion.FromToRotation(Vector3.up, up);
+        }
+
         private static float YawOf(Quaternion rotation)
         {
-            Vector3 forward = rotation * Vector3.forward;
+            Vector3 forward = Quaternion.Inverse(GameFrame()) * (rotation * Vector3.forward);
             return Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
         }
     }
