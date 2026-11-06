@@ -12,7 +12,7 @@ namespace GravityFlip
     {
         public const string PluginGuid = "fr.samandine.gravityflip";
         public const string PluginName = "Gravity Flip";
-        public const string PluginVersion = "1.3.0";
+        public const string PluginVersion = "1.3.1";
 
         internal static ManualLogSource Log;
 

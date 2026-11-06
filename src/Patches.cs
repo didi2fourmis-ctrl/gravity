@@ -18,8 +18,13 @@ namespace GravityFlip
 
         internal static void Mirror(Rigidbody body, ref Vector3 value)
         {
-            if (Depth > 0 && GravityController.Inverted && body == PlayerBody && value.y > 0f)
-                value.y = -value.y;
+            if (Depth == 0 || !GravityController.Inverted || body != PlayerBody)
+                return;
+            // On retourne la part de l'impulsion dirigée vers le « haut » du jeu.
+            Vector3 up = GravityController.GameUp;
+            float along = Vector3.Dot(value, up);
+            if (along > 0f)
+                value -= 2f * along * up;
         }
     }
 

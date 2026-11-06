@@ -44,8 +44,9 @@ namespace GravityFlip
 
             var capsule = player.GetComponent<CapsuleCollider>();
             var body = player.GetComponent<Rigidbody>();
-            // Gravité inversée : s'éloigner du plafond = descendre.
-            MovingAway = body != null && body.velocity.y < -1f;
+            // Le « plafond » est du côté où l'on tombe (relatif à la gravité du jeu).
+            Vector3 fall = GravityController.FallDirection;
+            MovingAway = body != null && Vector3.Dot(body.velocity, fall) < -1f;
             Transform t = player.transform;
 
             Vector3 center = capsule != null ? t.TransformPoint(capsule.center) : t.position;
@@ -57,7 +58,7 @@ namespace GravityFlip
             if (environmentMask == 0)
                 environmentMask = BuildEnvironmentMask(player.gameObject.layer);
 
-            int count = Physics.SphereCastNonAlloc(center, radius, Vector3.up, Hits, distance,
+            int count = Physics.SphereCastNonAlloc(center, radius, fall, Hits, distance,
                 environmentMask, QueryTriggerInteraction.Ignore);
 
             for (int i = 0; i < count; i++)
@@ -69,8 +70,8 @@ namespace GravityFlip
                     continue;
                 if (hit.collider.transform.IsChildOf(t))
                     continue;
-                // Une surface qui fait face vers le bas (normale vers le bas) est un plafond praticable.
-                if (hit.distance > 0f && hit.normal.y > -0.5f)
+                // Une surface tournée vers le joueur (normale opposée à la chute) est un plafond praticable.
+                if (hit.distance > 0f && Vector3.Dot(hit.normal, fall) > -0.5f)
                     continue;
                 Touching = true;
                 return;

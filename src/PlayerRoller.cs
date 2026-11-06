@@ -26,6 +26,7 @@ namespace GravityFlip
         private static bool wroteCamera;
         private static Quaternion lastCameraWrite;
 
+        private static Quaternion gameRotation = Quaternion.identity;
         private static float gameYaw;
         private static bool yawMirrored;
         private static float yawPivot;
@@ -72,8 +73,13 @@ namespace GravityFlip
             Transform t = player.transform;
 
             // Le jeu a-t-il réécrit la rotation depuis notre dernier passage ?
+            // On garde toute la rotation du jeu (pas seulement le lacet) : dans les niveaux où le jeu
+            // retourne lui-même le joueur, notre retournement s'ajoute au sien au lieu de l'effacer.
             if (!wrotePlayer || Quaternion.Angle(t.rotation, lastPlayerWrite) > 0.01f)
-                gameYaw = YawOf(t.rotation);
+            {
+                gameRotation = t.rotation;
+                gameYaw = YawOf(gameRotation);
+            }
 
             if (roll < 0.01f && !yawMirrored)
             {
@@ -81,8 +87,8 @@ namespace GravityFlip
                 return;
             }
 
-            float shownYaw = yawMirrored ? 2f * yawPivot - gameYaw : gameYaw;
-            Quaternion desired = Quaternion.Euler(0f, shownYaw, 0f) * Quaternion.Euler(0f, 0f, roll);
+            float yawOffset = yawMirrored ? 2f * (yawPivot - gameYaw) : 0f;
+            Quaternion desired = Quaternion.AngleAxis(yawOffset, Vector3.up) * gameRotation * Quaternion.Euler(0f, 0f, roll);
 
             if (Quaternion.Angle(t.rotation, desired) > 0.01f)
             {
@@ -94,14 +100,15 @@ namespace GravityFlip
             lastPlayerWrite = t.rotation;
             wrotePlayer = true;
 
-            FixCamera(t);
+            FixCamera(t, gameRotation * Vector3.up);
         }
 
         /// <summary>
         /// Si la caméra est orientée en coordonnées monde par le jeu (au lieu de suivre le joueur),
-        /// on la remet dans le repère retourné du joueur en gardant son inclinaison haut/bas.
+        /// on la remet dans le repère retourné du joueur en gardant son inclinaison haut/bas
+        /// (mesurée par rapport au « haut » du jeu).
         /// </summary>
-        private static void FixCamera(Transform player)
+        private static void FixCamera(Transform player, Vector3 gameUp)
         {
             var controller = GameObjects.CameraControl;
             if (controller == null)
@@ -119,7 +126,7 @@ namespace GravityFlip
                 return;
             }
 
-            gamePitch = -Mathf.Asin(Mathf.Clamp(cam.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
+            gamePitch = -Mathf.Asin(Mathf.Clamp(Vector3.Dot(cam.forward, gameUp), -1f, 1f)) * Mathf.Rad2Deg;
             cam.rotation = player.rotation * Quaternion.Euler(gamePitch, 0f, 0f);
             lastCameraWrite = cam.rotation;
             wroteCamera = true;

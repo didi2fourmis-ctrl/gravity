@@ -12,7 +12,8 @@ et les ennemis éjectés, les cadavres, les pièces de la Marksman, les grenades
 | **H** | Mode **chaos** : la gravité s'inverse toute seule toutes les 4 à 12 s |
 | **J** | Masquer / afficher le texte à l'écran (la gravité et le chaos restent actifs) |
 
-- `Physics.gravity` est inversée : tout objet physique est concerné.
+- `Physics.gravity` est inversée **par rapport à celle du jeu** : tout objet physique est concerné.
+  Dans les niveaux où le jeu inverse déjà la gravité, le mod ne la touche pas tant qu'il n'est pas activé.
 - **Le joueur se retourne vraiment** : il pivote de 180°, ses pieds se posent au plafond et la caméra
   reste à hauteur d'yeux. La vue est donc naturellement à l'envers. On y marche, glisse, saute et
   slamme comme sur un sol normal. La souris reste naturelle (option `InverserSourisX` si besoin).

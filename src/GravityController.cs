@@ -66,7 +66,7 @@ namespace GravityFlip
             float duration = Mathf.Max(0.01f, Plugin.FlipDuration.Value);
             FlipProgress = Mathf.MoveTowards(FlipProgress, Inverted ? 1f : 0f, Time.unscaledDeltaTime / duration);
 
-            EnforceGravityDirection();
+            SyncGravity();
             LogDebug();
         }
 
@@ -79,7 +79,7 @@ namespace GravityFlip
                 return;
 
             Inverted = value;
-            EnforceGravityDirection();
+            SyncGravity();
             PlayerRoller.OnInvertChanged(value);
 
             // Les corps endormis ignorent la gravité : on les réveille pour qu'ils "tombent" vers le haut.
@@ -92,15 +92,36 @@ namespace GravityFlip
             Plugin.Log.LogInfo(value ? "Gravité inversée !" : "Gravité normale.");
         }
 
+        // Gravité voulue par le jeu (certains niveaux l'inversent eux-mêmes) et dernière valeur écrite par le mod.
+        private static Vector3 gameGravity = new Vector3(0f, -9.81f, 0f);
+        private static Vector3 lastApplied;
+        private static bool tracking;
+
+        /// <summary>Le « haut » du jeu, sans le mod : opposé à la gravité voulue par le jeu.</summary>
+        public static Vector3 GameUp => gameGravity.sqrMagnitude > 1e-6f ? -gameGravity.normalized : Vector3.up;
+
+        /// <summary>Direction dans laquelle on tombe réellement (gravité du jeu, inversée par le mod si besoin).</summary>
+        public static Vector3 FallDirection => Inverted ? GameUp : -GameUp;
+
         /// <summary>
-        /// On ne garde que le signe : si le jeu modifie l'intensité de la gravité,
-        /// sa valeur est respectée, seule la direction est imposée.
+        /// Le mod inverse la gravité PAR RAPPORT à celle du jeu, sans jamais l'écraser : si un niveau
+        /// change lui-même la gravité, on adopte sa nouvelle valeur. Mod désactivé = gravité du jeu intacte.
         /// </summary>
-        private static void EnforceGravityDirection()
+        private static void SyncGravity()
         {
-            var g = Physics.gravity;
-            if (Inverted ? g.y < 0f : g.y > 0f)
-                Physics.gravity = new Vector3(g.x, -g.y, g.z);
+            Vector3 current = Physics.gravity;
+            if (!tracking || (current - lastApplied).sqrMagnitude > 1e-6f)
+            {
+                if (tracking)
+                    Plugin.Log.LogInfo($"Le jeu a changé la gravité : {current}.");
+                gameGravity = current;
+                tracking = true;
+            }
+
+            Vector3 wanted = Inverted ? -gameGravity : gameGravity;
+            if ((current - wanted).sqrMagnitude > 1e-6f)
+                Physics.gravity = wanted;
+            lastApplied = wanted;
         }
 
         private void ScheduleChaos()
